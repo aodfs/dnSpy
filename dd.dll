@@ -1,0 +1,18 @@
+# Run this script as an Administrator
+# Disable Windows Defender via Registry
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender" -Name "DisableAntiSpyware" -Value 1
+
+# Disable Real-Time Protection
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" -Name "DisableRealtimeMonitoring" -Value 1
+
+# Disable Cloud Protection
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet" -Name "SubmitSamplesConsent" -Value 2
+
+# Disable Tamper Protection (requires additional manual steps)
+Write-Output "Tamper Protection cannot be disabled via PowerShell. Please disable it manually in Windows Security settings."
+
+# Stop Windows Defender services
+Stop-Service -Name "WinDefend" -Force
+Set-Service -Name "WinDefend" -StartupType Disabled
+
+Write-Output "Windows Defender has been disabled. Restart may be required."

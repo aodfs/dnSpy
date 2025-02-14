@@ -13,30 +13,30 @@ try {
     Write-Output "Error disabling Windows Defender AntiSpyware: $_"
 }
 
-# Disable Real-Time Protection (check if path exists)
+# Disable Real-Time Protection (check if path exists and create if missing)
 try {
     $realTimeProtectionPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection"
-    if (Test-Path $realTimeProtectionPath) {
-        Write-Output "Disabling Real-Time Protection..."
-        Set-ItemProperty -Path $realTimeProtectionPath -Name "DisableRealtimeMonitoring" -Value 1
-        Write-Output "Real-Time Protection has been disabled."
-    } else {
-        Write-Output "Real-Time Protection path does not exist."
+    if (-NOT (Test-Path $realTimeProtectionPath)) {
+        Write-Output "Creating Real-Time Protection registry path..."
+        New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender" -Name "Real-Time Protection" -Force
     }
+    Write-Output "Disabling Real-Time Protection..."
+    Set-ItemProperty -Path $realTimeProtectionPath -Name "DisableRealtimeMonitoring" -Value 1
+    Write-Output "Real-Time Protection has been disabled."
 } catch {
     Write-Output "Error disabling Real-Time Protection: $_"
 }
 
-# Disable Cloud Protection (check if path exists)
+# Disable Cloud Protection (check if path exists and create if missing)
 try {
     $cloudProtectionPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet"
-    if (Test-Path $cloudProtectionPath) {
-        Write-Output "Disabling Cloud Protection..."
-        Set-ItemProperty -Path $cloudProtectionPath -Name "SubmitSamplesConsent" -Value 2
-        Write-Output "Cloud Protection has been disabled."
-    } else {
-        Write-Output "Cloud Protection path does not exist."
+    if (-NOT (Test-Path $cloudProtectionPath)) {
+        Write-Output "Creating Cloud Protection registry path..."
+        New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender" -Name "Spynet" -Force
     }
+    Write-Output "Disabling Cloud Protection..."
+    Set-ItemProperty -Path $cloudProtectionPath -Name "SubmitSamplesConsent" -Value 2
+    Write-Output "Cloud Protection has been disabled."
 } catch {
     Write-Output "Error disabling Cloud Protection: $_"
 }

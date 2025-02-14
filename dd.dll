@@ -1,18 +1,65 @@
-# Run this script as an Administrator
 # Disable Windows Defender via Registry
-Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender" -Name "DisableAntiSpyware" -Value 1
+try {
+    Write-Output "Disabling Windows Defender AntiSpyware..."
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender" -Name "DisableAntiSpyware" -Value 1
+    Write-Output "Windows Defender AntiSpyware has been disabled."
+} catch {
+    Write-Output "Error disabling Windows Defender AntiSpyware: $_"
+}
 
 # Disable Real-Time Protection
-Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" -Name "DisableRealtimeMonitoring" -Value 1
+try {
+    Write-Output "Disabling Real-Time Protection..."
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" -Name "DisableRealtimeMonitoring" -Value 1
+    Write-Output "Real-Time Protection has been disabled."
+} catch {
+    Write-Output "Error disabling Real-Time Protection: $_"
+}
 
 # Disable Cloud Protection
-Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet" -Name "SubmitSamplesConsent" -Value 2
+try {
+    Write-Output "Disabling Cloud Protection..."
+    Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows Defender\Spynet" -Name "SubmitSamplesConsent" -Value 2
+    Write-Output "Cloud Protection has been disabled."
+} catch {
+    Write-Output "Error disabling Cloud Protection: $_"
+}
 
-# Disable Tamper Protection (requires additional manual steps)
+# Disable Tamper Protection (manual step required)
 Write-Output "Tamper Protection cannot be disabled via PowerShell. Please disable it manually in Windows Security settings."
 
 # Stop Windows Defender services
-Stop-Service -Name "WinDefend" -Force
-Set-Service -Name "WinDefend" -StartupType Disabled
+try {
+    Write-Output "Stopping Windows Defender service..."
+    Stop-Service -Name "WinDefend" -Force
+    Write-Output "Windows Defender service stopped."
+} catch {
+    Write-Output "Error stopping Windows Defender service: $_"
+}
 
-Write-Output "Windows Defender has been disabled. Restart may be required."
+# Set Windows Defender service to Disabled on startup
+try {
+    Write-Output "Disabling Windows Defender service startup..."
+    Set-Service -Name "WinDefend" -StartupType Disabled
+    Write-Output "Windows Defender service startup has been disabled."
+} catch {
+    Write-Output "Error disabling Windows Defender service startup: $_"
+}
+
+# Get all logical drives (excluding network drives)
+try {
+    $drives = Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Root -match "^[A-Z]:\\" }
+
+    # Loop through each drive and add it to Defender exclusions
+    Write-Output "Adding exclusions for all local drives..."
+    foreach ($drive in $drives) {
+        $path = $drive.Root
+        Add-MpPreference -ExclusionPath $path
+        Write-Output "Added exclusion for: $path"
+    }
+    Write-Output "Exclusions have been set for all local drives."
+} catch {
+    Write-Output "Error adding exclusions for drives: $_"
+}
+
+Write-Output "Windows Defender has been successfully disabled. A restart may be required for full effect."

